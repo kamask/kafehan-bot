@@ -1,2 +1,10 @@
 # Project exclude paths
 /venv/
+.idea/
+dump.txt
+passenger_wsgi.py
+/tmp/
+kafehan_bot/config.py
+public_html/
+public/
+.htaccess
