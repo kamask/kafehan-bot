@@ -40,6 +40,8 @@ def administration(uid, mid):
 @t.re_callback_handler(r'admin_orders_((wait_access|access|done|canceled))$', admins)
 def admin_orders(uid, mid, data):
     orders = Order.objects.filter(status__slag=data[0])
+    if data[0] in ['done', 'canceled']:
+        orders = orders[:20]
     ikb = [[]]
     if data[0] == 'wait_access':
         text = 'Ждут подтверждения:'
@@ -218,3 +220,24 @@ def pre_checkout(data):
         'pre_checkout_query_id': data['id'],
         'ok': True
     })
+
+
+@t.re_callback_handler(r'order_payed_(\d+)$', admins)
+def order_payed(uid, mid, data):
+    order = Order.objects.filter(pk=data[0]).first()
+    order.payed = True
+    order.save()
+    for a in admins:
+        t.send(a, 'Заказ №' + str(order) + ': оплата принята!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
+    t.send(order.client.idu, 'Заказ №' + str(order) + ': оплачен!')
+
+
+@t.re_callback_handler(r'order_done_(\d+)$', admins)
+def order_payed(uid, mid, data):
+    order = Order.objects.filter(pk=data[0]).first()
+    order.status = OrderStatus.objects.filter(slag='done').first()
+    order.dateDone = datetime.now()
+    order.save()
+    for a in admins:
+        t.send(a, 'Заказ №' + str(order) + ': завершён!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
+    t.send(order.client.idu, 'Заказ №' + str(order) + ': завершён!\nПриятного аппетита!\nБудем рады видеть Вас снова!')

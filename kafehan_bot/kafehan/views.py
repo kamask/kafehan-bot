@@ -40,30 +40,31 @@ def yk(request):
         order = Order.objects.filter(pk=order_id).first()
 
         if order.pk == order_id:
-            t.clear_msg_stack(order.client.idu)
-            if status == 'succeeded':
-                order.payed = True
-                order.save()
-                t.send(
-                    order.client.idu,
-                    'Заказ №' + str(order) + ' успешно оплачен и уже готовится!')
-                for a in admins:
-                    t.send(
-                        a,
-                        'Заказ №' + str(order) + ' оплачен онлайн!',
-                        ikb=[[b('Просмотреть', 'order_' + str(order))]])
-
-            elif status == 'canceled':
-                url_pay = create_online_payment(order)
-
-                if url_pay:
+            if order.status.slag == 'access':
+                t.clear_msg_stack(order.client.idu)
+                if status == 'succeeded':
+                    order.payed = True
+                    order.save()
                     t.send(
                         order.client.idu,
-                        'Платёж не прошёл, сформирован новый:',
-                        ikb=[
-                            [bu('Оплатить ' + str(order.cost) + '₽', url_pay)],
-                            [b('Отменить заказ', 'order_cancel_' + str(order))]
-                        ])
+                        'Заказ №' + str(order) + ' успешно оплачен и уже готовится!')
+                    for a in admins:
+                        t.send(
+                            a,
+                            'Заказ №' + str(order) + ' оплачен онлайн!',
+                            ikb=[[b('Просмотреть', 'order_' + str(order))]])
+
+                elif status == 'canceled':
+                    url_pay = create_online_payment(order)
+
+                    if url_pay:
+                        t.send(
+                            order.client.idu,
+                            'Платёж не прошёл, сформирован новый:',
+                            ikb=[
+                                [bu('Оплатить ' + str(order.cost) + '₽', url_pay)],
+                                [b('Отменить заказ', 'order_cancel_' + str(order))]
+                            ])
 
     return JsonResponse({
         "status": 'Ok, thank you!'

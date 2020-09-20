@@ -47,7 +47,9 @@ def start(uid, mid):
 
     t.send(
         uid,
-        'Приветствуем! Найдите для себя самое вкусное блюдо, и мы будем радовать Вас им каждый день!',
+        ('Приветствуем! Найдите для себя самое вкусное блюдо, и мы будем радовать Вас им каждый день!\n '
+         '\nПри возникновении вопросов связанных с работой кафе Вы можете писать сюда: @txkamask, либо позвонить +79269404111.\n '
+         '\nПо вопросам связанным с работой бота, сюда: @tgkamask или +79256233500'),
         safe=True)
 
     kb = (([[b('Текущий заказ', 'order')]] if order else [])
@@ -249,6 +251,8 @@ def in_msg(uid, mid, data):
                 wait_access(uid)
         else:
             t.send(uid, 'Не ожидается текст для ввода')
+    else:
+        t.send(uid, 'Не ожидается текст для ввода')
 
 
 @t.location_handler()
@@ -486,6 +490,9 @@ def wait_access(uid):
 def orders_list(uid, mid, data):
     orders = Order.objects.filter(client__idu=uid, status__slag=data[0])
     ikb = [[]]
+
+    if data[0] in ['done', 'canceled']:
+        orders = orders[:20]
 
     if data[0] == 'wait_access':
         text = 'Ждут подтверждения:'
