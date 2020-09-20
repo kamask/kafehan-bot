@@ -6,6 +6,10 @@ def bt(text):
     return {"text": text}
 
 
+def bu(text, url):
+    return {"text": text, "url": url}
+
+
 menu = bt("Меню")
 orders = bt("История заказов")
 order = bt("Текущий заказ")

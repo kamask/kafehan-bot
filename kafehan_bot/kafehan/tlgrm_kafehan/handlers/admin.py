@@ -1,10 +1,16 @@
 import re
+import json
+import uuid
 from datetime import datetime
+import requests
+from requests.auth import HTTPBasicAuth
 
+
+from config import YK_SHOP_ID, YK_SHOP_API_TOKEN
 from kafehan.models import *
 from kafehan.tlgrm_kafehan import kbs
 from kafehan.tlgrm_kafehan.bot import t
-from kafehan.tlgrm_kafehan.kbs import b
+from kafehan.tlgrm_kafehan.kbs import b, bu
 from ksk_util.dump import add_dump_txt
 
 admins = [i.uid.idu for i in AdminKafeHan.objects.all()]
@@ -66,8 +72,6 @@ def order_canceled(uid, mid, data):
     order.save()
     if uid != order.client.idu and uid in admins:
         t.send(order.client.idu, 'Заказ №' + str(order) + ' отменён администратором!')
-    add_dump_txt(uid)
-    add_dump_txt(order.client.idu)
     if uid == order.client.idu:
         for a in admins:
             t.send(a, 'Заказ №' + str(order) + ' отменён клиентом!')
@@ -161,28 +165,55 @@ def order_access_one(uid, mid, data):
         Оплата: {order.pay.name}
         Телефон: {order.number}
                 """
-        data = {
-            "title": "Заказ №" + str(order),
-            "description": text,
-            "payload": str(uid) + '|' + str(order),
-            "provider_token": "390540012:LIVE:12523",
-            "start_parameter": str(uid) + '_' + str(order),
-            "currency": "RUB",
-            "prices": [
-                {
-                    "label": "Заказ №" + str(order),
-                    "amount": order.cost * 100
-                }
-            ]
-        }
-        t.send_invoice(order.client.idu, data)
+
+        url_pay = create_online_payment(order)
+
+        if url_pay:
+            t.send(
+                order.client.idu,
+                'Для оплаты онлайн Вы будете перенаправлены на сайт платёжной системы.',
+                ikb=[
+                    [bu('Оплатить ' + str(order.cost) + '₽', url_pay)],
+                    [b('Отменить заказ', 'order_cancel_' + str(order))]
+                ])
 
     t.send(uid, f'Заказ №{str(order)} подтверждён!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
 
 
+def create_online_payment(order):
+    try:
+        res = requests.post(
+            'https://payment.yandex.net/api/v3/payments',
+            headers={
+                'Idempotence-Key': str(uuid.uuid4()),
+                'Content-Type': 'application/json; charset utf-8',
+            },
+            data=json.dumps({
+                "amount": {
+                    "value": order.cost,
+                    "currency": "RUB"
+                },
+                "capture": True,
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": "t.me/kafeHanBot"
+                },
+                "description": 'Заказ №' + str(order)
+            }).encode('utf-8'),
+            auth=HTTPBasicAuth(YK_SHOP_ID, YK_SHOP_API_TOKEN)).json()
+    except Exception as e:
+        # dump_add(e)
+        # dump_add(traceback.format_exc())
+        res = None
+
+    if res and 'confirmation' in res:
+        OnlinePay.objects.create(id_pay=res['id'], status=res['status'], order=order, cost=order.cost)
+        res = res['confirmation']['confirmation_url']
+    return res
+
+
 @t.pre_checkout_handler()
 def pre_checkout(data):
-    add_dump_txt(data)
     t.request('answerPreCheckoutQuery', {
         'pre_checkout_query_id': data['id'],
         'ok': True

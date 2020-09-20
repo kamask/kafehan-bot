@@ -8,3 +8,4 @@ kafehan_bot/config.py
 public_html/
 public/
 .htaccess
+kafehan_bot/log/

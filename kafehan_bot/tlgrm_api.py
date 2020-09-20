@@ -54,12 +54,6 @@ class TBot:
                         break
             return finded
 
-        def clear_msg_stack():
-            if not self.history and uid in self.prev_msg_ids:
-                for m in self.prev_msg_ids[uid]:
-                    self.delete(uid, m)
-                del(self.prev_msg_ids[uid])
-
         if 'message' in res:
             user = res['message']['from']
             uid = user['id']
@@ -67,12 +61,12 @@ class TBot:
             if 'text' in res['message']:
                 data = res['message']['text']
                 self.users[uid] = user
-                clear_msg_stack()
+                self.clear_msg_stack(uid)
                 if not self.history and not search_handler(self.message_handlers, self.re_message_handlers):
                     self.delete(uid, mid)
                     self.send(uid, 'Ошибка ввода')
             elif 'location' in res['message']:
-                clear_msg_stack()
+                self.clear_msg_stack(uid)
                 self.location_handler_func(uid, mid, res['message']['location'])
 
         elif 'callback_query' in res:
@@ -81,14 +75,14 @@ class TBot:
             mid = res['callback_query']['message']['message_id']
             data = res['callback_query']['data']
             self.users[uid] = user
-            clear_msg_stack()
+            self.clear_msg_stack(uid)
             search_handler(self.callback_handlers, self.re_callback_handlers)
         elif 'poll_answer' in res:
             user = res['poll_answer']['user']
             uid = user['id']
             data = res['poll_answer']['option_ids']
             self.users[uid] = user
-            clear_msg_stack()
+            self.clear_msg_stack(uid)
             if uid in self.poll_handlers:
                 handler = self.poll_handlers[uid]
                 del(self.poll_handlers[uid])
@@ -139,6 +133,12 @@ class TBot:
                 func(*args, **kwargs)
             self.pre_checkout_handler_func = f
         return wrapper
+
+    def clear_msg_stack(self, uid):
+        if not self.history and uid in self.prev_msg_ids:
+            for m in self.prev_msg_ids[uid]:
+                self.delete(uid, m)
+            del (self.prev_msg_ids[uid])
 
     def request(self, method, data):
         url = 'https://api.telegram.org/bot' + self.token + '/' + method

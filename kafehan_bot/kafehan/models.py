@@ -166,3 +166,19 @@ class AdminKafeHan(models.Model):
     class Meta:
         verbose_name = 'Админ кафе'
         verbose_name_plural = 'Админ кафе'
+
+
+class OnlinePay(models.Model):
+    id_pay = models.CharField(max_length=255, unique=True, verbose_name='Идентификатор платежа')
+    status = models.CharField(max_length=255, verbose_name='Статус')
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, verbose_name='Заказ', null=True)
+    cost = models.IntegerField(verbose_name='Cумма')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    def __str__(self):
+        return str(self.id_pay)
+
+    class Meta:
+        verbose_name = 'Онлайн платёж'
+        verbose_name_plural = 'Онлайн платежи'

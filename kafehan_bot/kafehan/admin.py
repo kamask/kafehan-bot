@@ -53,6 +53,12 @@ class AdminKafeHanAdmin(admin.ModelAdmin):
     search_fields = ('uid',)
 
 
+class OnlinePayAdmin(admin.ModelAdmin):
+    list_display = ('order', 'cost', 'status', 'id_pay',)
+    search_fields = ('id_pay', 'status', 'order__pk', 'cost',)
+    list_filter = ('status',)
+
+
 admin.site.register(Client, ClientsAdmin)
 admin.site.register(Category, CategoriesAdmin)
 admin.site.register(Product, ProductsAdmin)
@@ -63,3 +69,4 @@ admin.site.register(OrderStatus, OrderStatusAdmin)
 admin.site.register(OrderPayType, OrderPayTypeAdmin)
 admin.site.register(Table, TableAdmin)
 admin.site.register(AdminKafeHan, AdminKafeHanAdmin)
+admin.site.register(OnlinePay, OnlinePayAdmin)
