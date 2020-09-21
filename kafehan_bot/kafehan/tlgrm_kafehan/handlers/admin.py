@@ -1,3 +1,4 @@
+import locale
 import re
 import json
 import uuid
@@ -13,6 +14,8 @@ from kafehan.tlgrm_kafehan.bot import t
 from kafehan.tlgrm_kafehan.kbs import b, bu
 from ksk_util.dump import add_dump_txt
 from . import order_calc
+
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 admins = [i.uid.idu for i in AdminKafeHan.objects.all()]
 
@@ -112,7 +115,7 @@ def repeat_order(uid, mid, data):
         t.delete(uid, mid_kb[uid])
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
             kb=kb, safe=True)
         t.send(uid, text, markdown=True, ikb=kbs.ikb_order)
     else:
@@ -120,7 +123,7 @@ def repeat_order(uid, mid, data):
         t.delete(order.client.idu, mid_kb[order.client.idu])
         mid_kb[order.client.idu] = t.send(
             order.client.idu,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
             kb=kb, safe=True)
         t.send(order.client.idu, '🖊 Администратором повторён ваш заказ, подтвердите или измените его.')
         t.send(order.client.idu, text, markdown=True, ikb=kbs.ikb_order)
