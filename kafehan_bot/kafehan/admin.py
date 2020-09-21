@@ -30,6 +30,7 @@ class OrderListAdmin(admin.ModelAdmin):
     list_display = ('order', 'product', 'count', 'created_at',)
     search_fields = ('order__pk', 'product__title',)
     list_filter = ('created_at',)
+    list_editable = ('count',)
 
 
 class OrderTypeAdmin(admin.ModelAdmin):

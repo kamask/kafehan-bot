@@ -1,6 +1,7 @@
 import os
 import locale
 import re
+import time
 from datetime import datetime
 from urllib.request import urlopen
 
@@ -47,67 +48,73 @@ def start(uid, mid):
 
     t.send(
         uid,
-        ('Приветствуем! Найдите для себя самое вкусное блюдо, и мы будем радовать Вас им каждый день!\n '
-         '\nПри возникновении вопросов связанных с работой кафе Вы можете писать сюда: @txkamask, либо позвонить +79269404111.\n '
-         '\nПо вопросам связанным с работой бота, сюда: @tgkamask или +79256233500'),
+        ('👋Приветствуем!\nНайдите для себя самое вкусное блюдо😋, и мы будем радовать Вас им каждый день!🗓\n '
+         '\nПри возникновении ❔вопросов связанных с работой кафе Вы можете писать сюда: 💬@kafehan_admin, либо позвонить 📞+79269404111.\n '
+         '\n🆘По вопросам связанным с работой бота🤖, сюда: 💬@tgkamask или 📞+79256233500'),
         safe=True)
 
-    kb = (([[b('Текущий заказ', 'order')]] if order else [])
+    time.sleep(5)
+
+    kb = (([[b('✔️ Текущий заказ', 'order')]] if order else [])
           + [[kbs.menu], [kbs.orders]]
-          + ([[bt('Администрирование')]] if uid in admins else []))
+          + ([[bt('🔓 Администрирование')]] if uid in admins else []))
     global mid_kb
     mid_kb[uid] = t.send(
         uid,
-        'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+        'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
         kb=kb, safe=True)
-    t.send(uid, txt.main, photo='https://py.sha88.ru/s/kafehan/natur.png')
+
+    time.sleep(1)
+
+    t.send(uid, txt.main, photo='https://kafehan-bot.webitmaster.ru/s/kafehan/natur.png')
     t.delete(uid, mid)
 
 
-@t.message_handler('Меню')
+@t.message_handler('📖 Меню')
 def menu(uid, mid):
     t.delete(uid, mid)
     cats = Category.objects.all()
     ikb = [[b(str(i), "cat_" + str(i.pk))] for i in cats]
-    t.send(uid, 'Выберите раздел:', ikb=ikb)
+    t.send(uid, '👇 Выберите раздел:', ikb=ikb)
 
 
-@t.message_handler('История заказов')
+@t.message_handler('🕒 История заказов')
 def orders(uid, mid):
     t.delete(uid, mid)
     orders = Order.objects.filter(client__idu=uid).exclude(status__slag='start')
-    text = 'На данный момент в истории нет заказов.' if not len(orders) else 'История заказов:'
+    text = '🤷 На данный момент в истории нет заказов.' if not len(orders) else '🕒 История заказов:'
     wait = orders.filter(status__slag='wait_access')
     access = orders.filter(status__slag='access')
     done = orders.filter(status__slag='done')
     canceled = orders.filter(status__slag='canceled')
     ikb = [[]]
     if wait:
-        ikb += [[b('Ждут подтверждения', 'orders_wait_access')]]
+        ikb += [[b('📌 Ждут подтверждения', 'orders_wait_access')]]
     if access:
-        ikb += [[b('Подтверждённые', 'orders_access')]]
+        ikb += [[b('✅ Подтверждённые', 'orders_access')]]
     if done:
-        ikb += [[b('Завершённые', 'orders_done')]]
+        ikb += [[b('🔰 Завершённые', 'orders_done')]]
     if canceled:
-        ikb += [[b('Отменены', 'orders_canceled')]]
+        ikb += [[b('🚷 Отменены', 'orders_canceled')]]
     t.send(uid, text, ikb=ikb)
 
 
-@t.message_handler('Текущий заказ')
+@t.message_handler('✔️ Текущий заказ')
 def current_order(uid, mid):
     t.delete(uid, mid)
     order = Order.objects.filter(client__idu=uid, status__slag='start').first()
+    order_calc(order)
     if order:
-        text = 'Заказ №' + str(order.pk) + '\n\n'
+        text = '📋 Заказ №' + str(order.pk) + '\n\n'
         prod_list = OrderList.objects.filter(order=order)
         i = 0
         for p in prod_list:
             i += 1
             text += f'{i}.) {p.product.title}\_\_{str(p.count)}шт.\_\_{str(p.product.cost * p.count)}₽\n'
-        text += f'\n*Итого: {order.cost}₽*'
+        text += f'\n💰 *Итого: {order.cost}₽*'
         t.send(uid, text, markdown=True, ikb=kbs.ikb_order)
     else:
-        t.send(uid, 'У Вас нет текущего заказа.')
+        t.send(uid, '🚷 У Вас нет текущего заказа.')
 
 
 @t.callback_handler('menu')
@@ -115,7 +122,7 @@ def cb_menu(uid, mid):
     t.delete(uid, mid)
     cats = Category.objects.all()
     ikb = [[b(str(i), "cat_" + str(i.pk))] for i in cats]
-    t.send(uid, 'Выберите раздел:', ikb=ikb)
+    t.send(uid, '👇 Выберите раздел:', ikb=ikb)
 
 
 @t.re_callback_handler(r'cat_(\d+)$')
@@ -127,7 +134,7 @@ def catalog(uid, mid, data):
     prods = cat.product_set.all()
     ikb = [[b(str(i), "cat_" + str(i.pk))] for i in other_cats]
 
-    t.send(uid, 'Выбран раздел - ' + str(cat), ikb=ikb)
+    t.send(uid, '✔ Выбран раздел - ' + str(cat), ikb=ikb)
     for p in prods:
         if p.visible:
             description = "_" + p.description + "_\n"
@@ -135,9 +142,9 @@ def catalog(uid, mid, data):
                     f'{description if p.description else ""}\nСтоимость: {p.cost}₽\n')
             t.send(
                 uid, text,
-                photo=('https://py.sha88.ru/' + p.photo.url) if p.photo else None,
+                photo=('https://kafehan-bot.webitmaster.ru/' + p.photo.url) if p.photo else None,
                 markdown=True, ikb=[[b('Добавить в заказ', 'prod_' + str(p.pk))]])
-    t.send(uid, 'Выбран раздел - ' + str(cat), ikb=ikb)
+    t.send(uid, '✔ Выбран раздел - ' + str(cat), ikb=ikb)
 
 
 @t.re_callback_handler(r'prod_(\d+)$')
@@ -150,19 +157,24 @@ def product(uid, mid, data):
         has = OrderList.objects.filter(order=order, product=p).first()
     description = "_" + p.description + "_\n"
     text = (f'\n*{p.title}*{(" / (" + p.weight + ")") if p.weight else ""}\n'
-            f'{description if p.description else ""}Стоимость: {p.cost}₽\n')
+            f'Стоимость: {p.cost}₽\n')
     if has:
         text += (f"\nВ заказе №{str(order)} добавлено {has.count}шт.\n\n"
-                 f"*Напишите цифрами колличество на которое нужно изменить*")
+                 f"👇 *Выберите колличество на которое нужно изменить, или напишите цифрами*")
     else:
-        text += "\n*Напишите цифрами колличество которое нужно добавить в заказ*"
+        text += "\n👇 *Выберите колличество которое нужно добавить в заказ, или напишите цифрами*"
 
-    ikb = [[b('Удалить из заказа', 'prodDelete_' + str(has.pk))] if has else []] + [
-        [b('Меню - ' + str(p.category), 'cat_' + str(p.category.pk))]
-    ]
+    ikb = ([[
+        b('1️⃣', 'add_prod_1|' + str(data[0]) + '|' + (str(has.pk) if has else '')),
+        b('2️⃣', 'add_prod_2|' + str(data[0]) + '|' + (str(has.pk) if has else '')),
+        b('3️⃣', 'add_prod_3|' + str(data[0]) + '|' + (str(has.pk) if has else '')),
+        b('4️⃣', 'add_prod_4|' + str(data[0]) + '|' + (str(has.pk) if has else '')),
+        b('5️⃣', 'add_prod_5|' + str(data[0]) + '|' + (str(has.pk) if has else ''))]] +
+           [[b('✖ Удалить из заказа', 'prodDelete_' + str(has.pk))] if has else []] +
+           [[b('⬅ Назад в меню - ' + str(p.category), 'cat_' + str(p.category.pk))]])
 
     midd = t.send(uid, text,
-                  photo=('https://py.sha88.ru/' + p.photo.url) if p.photo else None,
+                  photo=('https://kafehan-bot.webitmaster.ru/' + p.photo.url) if p.photo else None,
                   ikb=ikb, markdown=True)
 
     msg_wait[uid] = 'add_' + str(midd) + '_' + str(p.pk)
@@ -170,14 +182,60 @@ def product(uid, mid, data):
         msg_wait[uid] += '_' + str(has.pk)
 
 
-def order_calc(uid):
-    order = Order.objects.filter(client__idu=uid, status__slag='start').first()
+@t.re_callback_handler(r'add_prod_([\d|]+)$')
+def add_prod_cb_handler(uid, mid, data):
+    data = data[0].split('|')
+    add_prod(uid, data[1], data[0], data[2])
+
+
+def order_calc(order):
+    delevery = OrderType.objects.filter(slag='delevery').first()
     prod_list = OrderList.objects.filter(order=order)
     summ = 0
     for p in prod_list:
         summ += p.product.cost * p.count
+    if delevery == order.type:
+        summ += int(re.search(r'\+(\d+)', delevery.name).group(1))
     order.cost = summ
     order.save()
+
+
+def add_prod(uid, prod_id, count, has):
+    order = Order.objects.filter(client__idu=uid, status__slag='start').first()
+    user = Client.objects.filter(idu=uid).first()
+    prod = Product.objects.filter(pk=int(prod_id)).first()
+    if not order:
+        status = OrderStatus.objects.filter(slag='start').first()
+        order = Order(client=user, status=status)
+        order.save()
+        kb = ([[b('✔ Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
+        global mid_kb
+        t.delete(uid, mid_kb[uid])
+
+        mid_kb[uid] = t.send(
+            uid,
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
+            kb=kb, safe=True)
+
+    if not has:
+        OrderList.objects.create(order=order, product=prod, count=int(count))
+    else:
+        has = OrderList.objects.filter(pk=int(has)).first()
+        has.count = int(count)
+        has.save()
+    order_calc(order)
+    text = (f'✔ {prod.title} {count}шт. {str(prod.cost * int(count))}₽\n'
+            f'{"добавлено в заказ" if not has else "изменено в заказе"} №{str(order)}')
+    t.send(uid, text)
+    order = Order.objects.filter(client__idu=uid, status__slag='start').first()
+    text = '📋 Заказ №' + str(order.pk) + '\n\n'
+    prod_list = OrderList.objects.filter(order=order)
+    i = 0
+    for p in prod_list:
+        i += 1
+        text += f'{i}.) {p.product.title}\_\_{str(p.count)}шт.\_\_{str(p.product.cost * p.count)}₽\n'
+    text += f'\n💰 *Итого: {order.cost}₽*'
+    t.send(uid, text, markdown=True, ikb=kbs.ikb_order)
 
 
 @t.re_message_handler(r'(.+)')
@@ -190,44 +248,13 @@ def in_msg(uid, mid, data):
             if data_wait[0] == 'add':
                 if data[0].isdigit() and int(data[0]) > 0:
                     del (msg_wait[uid])
-                    order = Order.objects.filter(client__idu=uid, status__slag='start').first()
-                    user = Client.objects.filter(idu=uid).first()
-                    prod = Product.objects.filter(pk=int(data_wait[2])).first()
-                    if not order:
-                        status = OrderStatus.objects.filter(slag='start').first()
-                        order = Order(client=user, status=status)
-                        order.save()
-                        kb = ([[b('Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
-                        global mid_kb
-                        t.delete(uid, mid_kb[uid])
-
-                        mid_kb[uid] = t.send(
-                            uid,
-                            'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
-                            kb=kb, safe=True)
-
                     has = None
-                    if len(data_wait) == 3:
-                        OrderList.objects.create(order=order, product=prod, count=int(data[0]))
-                    elif len(data_wait) == 4:
-                        has = OrderList.objects.filter(pk=int(data_wait[3])).first()
-                        has.count = int(data[0])
-                        has.save()
-                    order_calc(uid)
-                    text = (f'{prod.title} {data[0]}шт. {str(prod.cost * int(data[0]))}₽\n'
-                            f'{"добавлено в заказ" if not has else "изменено в заказе"} №{str(order)}')
-                    t.send(uid, text)
-                    order = Order.objects.filter(client__idu=uid, status__slag='start').first()
-                    text = 'Заказ №' + str(order.pk) + '\n\n'
-                    prod_list = OrderList.objects.filter(order=order)
-                    i = 0
-                    for p in prod_list:
-                        i += 1
-                        text += f'{i}.) {p.product.title}\_\_{str(p.count)}шт.\_\_{str(p.product.cost * p.count)}₽\n'
-                    text += f'\n*Итого: {order.cost}₽*'
-                    t.send(uid, text, markdown=True, ikb=kbs.ikb_order)
+                    if len(data_wait) == 4:
+                        has = data_wait[3]
+                        t.delete(uid, data_wait[1])
+                    add_prod(uid, data_wait[2], data[0], has)
                 else:
-                    t.send(uid, 'Введите число порций, которое хотите добавить в заказ!')
+                    t.send(uid, '‼ Введите число порций, которое хотите добавить в заказ!')
             elif data_wait[0] == 'delevery':
                 del (msg_wait[uid])
                 order = Order.objects.filter(client__idu=uid, status__slag='start').first()
@@ -250,9 +277,9 @@ def in_msg(uid, mid, data):
                 order.save()
                 wait_access(uid)
         else:
-            t.send(uid, 'Не ожидается текст для ввода')
+            t.send(uid, '‼ Не ожидается текст для ввода')
     else:
-        t.send(uid, 'Не ожидается текст для ввода')
+        t.send(uid, '‼ Не ожидается текст для ввода')
 
 
 @t.location_handler()
@@ -280,17 +307,17 @@ def prod_delete(uid, mid, data):
 
             mid_kb[uid] = t.send(
                 uid,
-                'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+                'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
                 kb=kb, safe=True)
 
-        t.send(uid, f'В заказе №{str(order)} больше не осталось блюд, поэтому он был удалён.')
+        t.send(uid, f'⭕ В заказе №{str(order)} больше не осталось блюд, поэтому он был удалён.')
         if order:
             order.delete()
     else:
         p = order_list.filter(pk=data[0]).first()
         p.delete()
-        order_calc(uid)
-        t.send(uid, f'{p.product.title} удалено из заказа №' + str(order))
+        order_calc(order)
+        t.send(uid, f'❌ {p.product.title} удалено из заказа №' + str(order))
 
 
 @t.callback_handler('edit')
@@ -300,13 +327,13 @@ def edit_order(uid, mid):
     kb = [[]]
     for p in prod_list:
         kb += [[b(p.product.title + ' ' + str(p.count) + 'шт.', 'prod_' + str(p.product.pk))]]
-    t.send(uid, 'Выберите нужный пункт', ikb=kb)
+    t.send(uid, '👇 Выберите нужный пункт', ikb=kb)
 
 
 @t.callback_handler('delete')
 def delete_order(uid, mid):
     order = Order.objects.filter(client__idu=uid, status__slag='start').first()
-    t.send(uid, 'Заказ №' + str(order) + ' удалён.')
+    t.send(uid, '🚫 Заказ №' + str(order) + ' удалён.')
     kb = [[kbs.menu], [kbs.orders]]
     global mid_kb
     midd = mid_kb.get(uid, False)
@@ -315,7 +342,7 @@ def delete_order(uid, mid):
         t.delete(uid, midd)
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
             kb=kb, safe=True)
 
     if order:
@@ -336,8 +363,8 @@ def get_comment(uid):
     text = 'нужно накрыть на стол' if order.type.slag == 'table' else 'хотите получить заказ'
 
     t.send(uid,
-           'Вы можете написать комментарий к закзау, а также время к которому ' + text,
-           ikb=[[b('Пропустить', 'skip_comment')]])
+           '✒ Вы можете написать комментарий к закзау, а также время к которому ' + text,
+           ikb=[[b('➡ Пропустить', 'skip_comment')]])
     msg_wait[uid] = 'comment'
 
 
@@ -352,7 +379,7 @@ def poll_select_pay_type(uid):
         order.save()
         get_comment(uid)
 
-    t.poll(uid, 'Выберите способ оплаты ', opt_pay, cb_pay_type)
+    t.poll(uid, '👇 Выберите способ оплаты ', opt_pay, cb_pay_type)
 
 
 @t.callback_handler('access')
@@ -372,18 +399,18 @@ def access(uid, mid):
             poll_select_pay_type(uid)
         elif order.type.slag == 'delevery':
             msg_wait[uid] = 'delevery'
-            t.send(uid, 'Напишите адрес для доставки или отправьте геопозицию')
+            t.send(uid, '🌏 Напишите адрес для доставки или отправьте геопозицию')
         elif order.type.slag == 'table':
             tables = Table.objects.all()
-            t.send(uid, 'Выберите желаемый стол')
+            t.send(uid, '👇 Выберите желаемый стол')
             for tb in tables:
                 t.send(
                     uid,
                     'Стол №' + str(tb.num),
-                    photo='https://py.sha88.ru' + tb.photo.url,
+                    photo='https://kafehan-bot.webitmaster.ru' + tb.photo.url,
                     ikb=[[b('Выбрать', 'table_' + str(tb.num))]])
 
-    t.poll(uid, 'Выберите способ получения', opt, cb)
+    t.poll(uid, '👇 Выберите способ получения', opt, cb)
 
 
 @t.re_callback_handler(r'table_(\d+)$')
@@ -421,11 +448,8 @@ def access_order(uid):
         if order.address:
             order.address = None
 
-    order_calc(uid)
-    if order.type.slag == 'delevery':
-        order.cost = order.cost + delevery_cost
-        order.save()
-    text = 'Заказ №' + str(order.pk) + '\n\n'
+    order_calc(order)
+    text = '📋 Заказ №' + str(order.pk) + '\n\n'
     prod_list = OrderList.objects.filter(order=order)
     i = 0
     for p in prod_list:
@@ -434,7 +458,7 @@ def access_order(uid):
     if order.type.slag == 'delevery':
         text += f'\nДоствка - {str(delevery_cost)}₽\n'
     text += f'''
-*Итого: {order.cost}₽*
+💰 *Итого: {order.cost}₽*
 
 Получение: {order.type}
 '''
@@ -448,10 +472,10 @@ def access_order(uid):
 Комментарий: {order.comment if order.comment else 'Без комментариев'}
 Оплата: {order.pay.name}
 
-*Для подтверждения заказа напишите Ваш номер телефона*
+☎ *Для подтверждения заказа напишите Ваш номер телефона*
     """
 
-    ikb = [[b('Использовать ' + user.number, 'select_number_user')]] if user.number else None
+    ikb = [[b('📲 Использовать ' + user.number, 'select_number_user')]] if user.number else None
     msg_wait[uid] = 'tel'
     t.send(uid, text, ikb=ikb, markdown=True)
     if order.address and order.address[:3] == 'loc':
@@ -474,16 +498,16 @@ def wait_access(uid):
         t.delete(uid, midd)
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
             kb=kb, safe=True)
 
     t.send(
         uid,
-        ('Ожидайте подтверждения, заказ перемещён в историю'
+        ('✅ Ожидайте подтверждения, заказ перемещён в историю'
          + (', после подтверждения Вы сможете оплатить заказ онлайн' if order.pay.slag == 'online' else '')))
 
     for a in admins:
-        t.send(a, 'Новый заказ:', ikb=[[b(f'№{str(order)} - {str(order.cost)}₽', 'order_' + str(order))]])
+        t.send(a, '✅ Новый заказ:', ikb=[[b(f'№{str(order)} - {str(order.cost)}₽', 'order_' + str(order))]])
 
 
 @t.re_callback_handler(r'orders_((wait_access|access|done|canceled))$')
@@ -495,13 +519,13 @@ def orders_list(uid, mid, data):
         orders = orders[:20]
 
     if data[0] == 'wait_access':
-        text = 'Ждут подтверждения:'
+        text = '☑ Ждут подтверждения:'
     elif data[0] == 'access':
-        text = 'Подтверждённые:'
+        text = '✔ Подтверждённые:'
     elif data[0] == 'canceled':
-        text = 'Отменены:'
+        text = '⭕  Отменены:'
     else:
-        text = 'Завершённые:'
+        text = '✅  Завершённые:'
 
     for o in orders:
         if data[0] == 'wait_access':
@@ -512,7 +536,7 @@ def orders_list(uid, mid, data):
             date = o.dateCanceled
         else:
             date = o.dateDone
-
+        order_calc(o)
         ikb += [[b(f'№{str(o.pk)}) {str(date.strftime("%d%B%Yг. %H:%M"))} - {str(o.cost)}₽', 'order_' + str(o.pk))]]
     t.send(uid, text, ikb=ikb)
 
@@ -525,7 +549,9 @@ def order_one(uid, mid, data):
     payed = 'оплачено' if order.payed else 'НЕоплачено'
     delevery_cost = int(re.search(r'\+(\d+)', OrderType.objects.filter(slag='delevery').first().name).group(1))
 
-    text = 'Заказ №' + str(order.pk) + '\n\n'
+    order_calc(order)
+
+    text = '📋 Заказ №' + str(order.pk) + '\n\n'
     prod_list = OrderList.objects.filter(order=order)
     i = 0
     for p in prod_list:
@@ -534,7 +560,7 @@ def order_one(uid, mid, data):
     if order.type.slag == 'delevery':
         text += f'\nДоствка - {str(delevery_cost)}₽\n'
     text += f'''
-*Итого: {order.cost}₽*
+💰 *Итого: {order.cost}₽*
 
 Получение: {order.type}
     '''
@@ -552,11 +578,11 @@ def order_one(uid, mid, data):
 
     ikb = [[]]
     if status.slag in ['access', 'wait_access']:
-        ikb += [[b('Отменить заказ', 'order_cancel_'+str(order))]]
+        ikb += [[b('🚷 Отменить заказ', 'order_cancel_'+str(order))]]
     if status.slag == 'done' and uid == order.client.idu:
-        ikb += [[b('Повторить заказ', 'order_repeat_' + str(order))]]
+        ikb += [[b('♻ Повторить заказ', 'order_repeat_' + str(order))]]
     if status.slag == 'canceled':
-        ikb += [[b('Повторить', 'order_repeat_' + str(order))]]
+        ikb += [[b('♻ Повторить', 'order_repeat_' + str(order))]]
 
     if uid in admins:
         if order.dateOrder:
@@ -580,15 +606,15 @@ def order_one(uid, mid, data):
     Зарегистрирован: {order.client.created_at.strftime("%d%B%Yг. %H:%M")}
         """
         if status.slag == 'wait_access':
-            ikb += [[b('Подтвердить заказ', 'order_access_' + str(order))]]
+            ikb += [[b('☑️ Подтвердить заказ', 'order_access_' + str(order))]]
         if status.slag == 'access' and not order.payed:
-            ikb += [[b('Принять оплату', 'order_payed_' + str(order))]]
+            ikb += [[b('💸 Принять оплату', 'order_payed_' + str(order))]]
         if status.slag != 'done':
-            ikb += [[b('Обновить', 'order_' + str(order))]]
+            ikb += [[b('♻️ Обновить', 'order_' + str(order))]]
         if status.slag == 'access' and order.payed:
-            ikb += [[b('Завершить заказ', 'order_done_' + str(order))]]
+            ikb += [[b('✅ Завершить заказ', 'order_done_' + str(order))]]
 
-    photo = 'https://py.sha88.ru' + order.client.photo.url if order.client.photo and uid in admins else None
+    photo = 'https://kafehan-bot.webitmaster.ru' + order.client.photo.url if order.client.photo and uid in admins else None
 
     t.send(uid, text, ikb=ikb, markdown=True, photo=photo)
     if order.address and order.address[:3] == 'loc':

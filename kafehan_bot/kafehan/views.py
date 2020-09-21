@@ -15,8 +15,8 @@ from .tlgrm_kafehan.kbs import bu, b
 def tg(request):
     res = json.loads(request.body)
 
-    with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log.txt')), 'a') as f:
-        f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
+    # with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log.txt')), 'a') as f:
+    #     f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
 
     t.webhook_handler(res)
 
@@ -28,8 +28,8 @@ def tg(request):
 def yk(request):
     res = json.loads(request.body)
 
-    with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log-yk.txt')), 'a') as f:
-        f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
+    # with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log-yk.txt')), 'a') as f:
+    #     f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
 
     if 'object' in res:
         status = res['object']['status']
@@ -47,12 +47,12 @@ def yk(request):
                     order.save()
                     t.send(
                         order.client.idu,
-                        'Заказ №' + str(order) + ' успешно оплачен и уже готовится!')
+                        '✅ Заказ №' + str(order) + ' успешно оплачен 💵 и уже готовится!♨')
                     for a in admins:
                         t.send(
                             a,
-                            'Заказ №' + str(order) + ' оплачен онлайн!',
-                            ikb=[[b('Просмотреть', 'order_' + str(order))]])
+                            '✅ Заказ №' + str(order) + ' оплачен онлайн! 💵',
+                            ikb=[[b('Просмотреть 👀', 'order_' + str(order))]])
 
                 elif status == 'canceled':
                     url_pay = create_online_payment(order)
@@ -60,10 +60,10 @@ def yk(request):
                     if url_pay:
                         t.send(
                             order.client.idu,
-                            'Платёж не прошёл, сформирован новый:',
+                            '🚷 Платёж не прошёл, сформирован новый:',
                             ikb=[
-                                [bu('Оплатить ' + str(order.cost) + '₽', url_pay)],
-                                [b('Отменить заказ', 'order_cancel_' + str(order))]
+                                [bu('💲 Оплатить' + str(order.cost) + '₽', url_pay)],
+                                [b('❌ Отменить заказ', 'order_cancel_' + str(order))]
                             ])
 
     return JsonResponse({

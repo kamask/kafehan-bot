@@ -12,11 +12,12 @@ from kafehan.tlgrm_kafehan import kbs
 from kafehan.tlgrm_kafehan.bot import t
 from kafehan.tlgrm_kafehan.kbs import b, bu
 from ksk_util.dump import add_dump_txt
+from . import order_calc
 
 admins = [i.uid.idu for i in AdminKafeHan.objects.all()]
 
 
-@t.message_handler('Администрирование', admins)
+@t.message_handler('🔓 Администрирование', admins)
 def administration(uid, mid):
     t.delete(uid, mid)
     orders = Order.objects.exclude(status__slag='start')
@@ -27,14 +28,14 @@ def administration(uid, mid):
 
     ikb = [[]]
     if wait:
-        ikb += [[b('Ожидают подтверждения', 'admin_orders_wait_access')]]
+        ikb += [[b('☑ Ожидают подтверждения', 'admin_orders_wait_access')]]
     if access:
-        ikb += [[b('Подтверждены', 'admin_orders_access')]]
+        ikb += [[b('✔ Подтверждены', 'admin_orders_access')]]
     if done:
-        ikb += [[b('Завершены', 'admin_orders_done')]]
+        ikb += [[b('✅ Завершены', 'admin_orders_done')]]
     if canceled:
-        ikb += [[b('Отменены', 'admin_orders_canceled')]]
-    t.send(uid, 'Администрирование:', ikb=ikb)
+        ikb += [[b('🚫 Отменены', 'admin_orders_canceled')]]
+    t.send(uid, '🔓 Администрирование:', ikb=ikb)
 
 
 @t.re_callback_handler(r'admin_orders_((wait_access|access|done|canceled))$', admins)
@@ -44,14 +45,15 @@ def admin_orders(uid, mid, data):
         orders = orders[:20]
     ikb = [[]]
     if data[0] == 'wait_access':
-        text = 'Ждут подтверждения:'
+        text = '☑ Ждут подтверждения:'
     elif data[0] == 'access':
-        text = 'Подтверждённые:'
+        text = '✔ Подтверждённые:'
     elif data[0] == 'canceled':
-        text = 'Отменены:'
+        text = '🚫 Отменены:'
     else:
-        text = 'Завершённые:'
+        text = '✅ Завершённые:'
     for o in orders:
+        order_calc(o)
         if data[0] == 'wait_access':
             date = o.dateOrder.strftime("%d%B%Yг. %H:%M") if o.dateOrder else ''
         elif data[0] == 'access':
@@ -73,11 +75,11 @@ def order_canceled(uid, mid, data):
     order.canceled = uid
     order.save()
     if uid != order.client.idu and uid in admins:
-        t.send(order.client.idu, 'Заказ №' + str(order) + ' отменён администратором!')
+        t.send(order.client.idu, '⛔ Заказ №' + str(order) + ' отменён администратором!')
     if uid == order.client.idu:
         for a in admins:
-            t.send(a, 'Заказ №' + str(order) + ' отменён клиентом!')
-    t.send(uid, 'Заказ №' + str(order) + ' отменён!')
+            t.send(a, '⛔ Заказ №' + str(order) + ' отменён клиентом!')
+    t.send(uid, '⛔ Заказ №' + str(order) + ' отменён!')
 
 
 @t.re_callback_handler(r'order_repeat_(\d+)$')
@@ -86,7 +88,7 @@ def repeat_order(uid, mid, data):
     if Order.objects.filter(client__idu=client.idu, status__slag='start').first():
         t.send(
             uid,
-            'Существует текущий заказ, отмените его или подтвердите. '
+            '⛔ Существует текущий заказ, отмените его или подтвердите. '
             'Затем Вы сможете повторить любой завершённый или отменённый заказ.')
         return
     order = Order(client=client, status=OrderStatus.objects.filter(slag='start').first())
@@ -97,20 +99,20 @@ def repeat_order(uid, mid, data):
         summ += p.product.cost * p.count
     order.cost = summ
     order.save()
-    text = 'Заказ №' + str(order.pk) + '\n\n'
+    text = '📋 Заказ №' + str(order.pk) + '\n\n'
     prod_list = OrderList.objects.filter(order=order)
     i = 0
     for p in prod_list:
         i += 1
         text += f'{i}.) {p.product.title}\_\_{str(p.count)}шт.\_\_{str(p.product.cost * p.count)}₽\n'
     from . import mid_kb
-    text += f'\n*Итого: {order.cost}₽*'
-    kb = ([[b('Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
+    text += f'\n💰 *Итого: {order.cost}₽*'
+    kb = ([[b('📌 Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
     if uid == order.client.idu:
         t.delete(uid, mid_kb[uid])
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
             kb=kb, safe=True)
         t.send(uid, text, markdown=True, ikb=kbs.ikb_order)
     else:
@@ -118,9 +120,9 @@ def repeat_order(uid, mid, data):
         t.delete(order.client.idu, mid_kb[order.client.idu])
         mid_kb[order.client.idu] = t.send(
             order.client.idu,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент!',
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!',
             kb=kb, safe=True)
-        t.send(order.client.idu, 'Администратором повторён ваш заказ, подтвердите или измените его.')
+        t.send(order.client.idu, '🖊 Администратором повторён ваш заказ, подтвердите или измените его.')
         t.send(order.client.idu, text, markdown=True, ikb=kbs.ikb_order)
 
 
@@ -131,19 +133,19 @@ def order_access_one(uid, mid, data):
     order.dateAccess = datetime.now()
     order.save()
 
-    text = (f' До либо во время получения заказа, необходимо перевести {str(order.cost)}₽ на карту '
+    text = (f' ❕ До либо во время получения заказа, необходимо перевести {str(order.cost)}₽ на карту '
             'Сбербанк Visa 4276 3800 1966 5251 с комментарием: ' + str(order)
             + '.\nПолучатель: Бозорбоев Мухаммадюнус Юлдашбой.')
 
     t.send(
         order.client.idu,
-        f'Ваш заказ №{str(order)} подтверждён!'
+        f'✅ Ваш заказ №{str(order)} подтверждён!'
         + (text if order.pay.slag == 'perevod' else ''))
 
     if order.pay.slag == 'online':
         delevery_cost = int(re.search(r'\+(\d+)', OrderType.objects.filter(slag='delevery').first().name).group(1))
 
-        text = 'Заказ №' + str(order) + '\n\n'
+        text = '📋 Заказ №' + str(order) + '\n\n'
         prod_list = OrderList.objects.filter(order=order)
         i = 0
         for p in prod_list:
@@ -152,7 +154,7 @@ def order_access_one(uid, mid, data):
         if order.type.slag == 'delevery':
             text += f'\nДоствка - {str(delevery_cost)}₽\n'
         text += f'''
-        *Итого: {order.cost}₽*
+        💰 *Итого: {order.cost}₽*
 
         Получение: {order.type}
             '''
@@ -173,13 +175,13 @@ def order_access_one(uid, mid, data):
         if url_pay:
             t.send(
                 order.client.idu,
-                'Для оплаты онлайн Вы будете перенаправлены на сайт платёжной системы.',
+                '❕ Для оплаты онлайн Вы будете перенаправлены на сайт платёжной системы.',
                 ikb=[
-                    [bu('Оплатить ' + str(order.cost) + '₽', url_pay)],
-                    [b('Отменить заказ', 'order_cancel_' + str(order))]
+                    [bu('💳 Оплатить ' + str(order.cost) + '₽', url_pay)],
+                    [b('🚫 Отменить заказ', 'order_cancel_' + str(order))]
                 ])
 
-    t.send(uid, f'Заказ №{str(order)} подтверждён!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
+    t.send(uid, f'☑ Заказ №{str(order)} подтверждён!', ikb=[[b('👀 Просмотреть', 'order_' + str(order))]])
 
 
 def create_online_payment(order):
@@ -228,8 +230,8 @@ def order_payed(uid, mid, data):
     order.payed = True
     order.save()
     for a in admins:
-        t.send(a, 'Заказ №' + str(order) + ': оплата принята!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
-    t.send(order.client.idu, 'Заказ №' + str(order) + ': оплачен!')
+        t.send(a, '✔ Заказ №' + str(order) + ': оплата принята!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
+    t.send(order.client.idu, '✔ Заказ №' + str(order) + ': оплачен!')
 
 
 @t.re_callback_handler(r'order_done_(\d+)$', admins)
@@ -239,5 +241,5 @@ def order_payed(uid, mid, data):
     order.dateDone = datetime.now()
     order.save()
     for a in admins:
-        t.send(a, 'Заказ №' + str(order) + ': завершён!', ikb=[[b('Просмотреть', 'order_' + str(order))]])
-    t.send(order.client.idu, 'Заказ №' + str(order) + ': завершён!\nПриятного аппетита!\nБудем рады видеть Вас снова!')
+        t.send(a, '✔ Заказ №' + str(order) + ': завершён!', ikb=[[b('👀 Просмотреть', 'order_' + str(order))]])
+    t.send(order.client.idu, '✔ Заказ №' + str(order) + ': завершён!\n🍲 Приятного аппетита!\n🙋 ‍Будем рады видеть Вас снова!')
