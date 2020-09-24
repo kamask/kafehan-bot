@@ -15,8 +15,8 @@ from .tlgrm_kafehan.kbs import bu, b
 def tg(request):
     res = json.loads(request.body)
 
-    # with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log.txt')), 'a') as f:
-    #     f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
+    with open(os.path.normpath(os.path.join(BASE_DIR, 'log/log.txt')), 'a') as f:
+        f.write('\n'+str(datetime.now())+'\n'+json.dumps(res, indent="    ", ensure_ascii=False,)+'\n\n')
 
     t.webhook_handler(res)
 

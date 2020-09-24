@@ -172,13 +172,15 @@ class TBot:
     def get_tg_user(self, uid):
         return self.users[uid]
 
-    def send(self, uid, text, kb=None, ikb=None, photo=None, markdown=False, safe=False):
+    def send(self, uid, text, kb=None, ikb=None, photo=None, markdown=False, safe=False, web_preview=True):
         data = {'chat_id': uid}
         if photo:
             data['caption'] = text
             data['photo'] = photo
         else:
             data['text'] = text
+        if not web_preview:
+            data['disable_web_page_preview'] = True
         if markdown:
             data['parse_mode'] = 'Markdown'
         if kb or ikb:

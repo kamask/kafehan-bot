@@ -49,11 +49,13 @@ def start(uid, mid):
     t.send(
         uid,
         ('👋Приветствуем!\nНайдите для себя самое вкусное блюдо😋, и мы будем радовать Вас им каждый день!🗓\n'
-         '\nПри возникновении ❔вопросов связанных с работой кафе Вы можете писать сюда: 💬@kafehan_admin, либо позвонить 📞+79269404111.\n '
-         '\n🆘По вопросам связанным с работой бота🤖, сюда: 💬@tgkamask или 📞+79256233500'),
+         '\n❔💬При возникновении вопросов связанных с работой кафе Вы можете писать сюда: [Кафе Хан - Администратор](http://t.me/kafehan_admin?start), либо позвонить 📞 +79269404111.\n '
+         '\n🆘🤖По вопросам связанным с работой бота, сюда: [Разработчик бота](http://t.me/txkamask?start) или 📞 +79256233500'),
+        markdown=True,
+        web_preview=False,
         safe=True)
 
-    time.sleep(5)
+    time.sleep(4)
 
     kb = (([[b('✔️ Текущий заказ', 'order')]] if order else [])
           + [[kbs.menu], [kbs.orders]]
@@ -61,10 +63,10 @@ def start(uid, mid):
     global mid_kb
     mid_kb[uid] = t.send(
         uid,
-        'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
-        kb=kb, safe=True)
+        'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале [Кафе Хан - Новости](http://t.me/kafehan?start)',
+        kb=kb, safe=True, markdown=True)
 
-    time.sleep(1)
+    time.sleep(2)
 
     t.send(uid, txt.main, photo='https://kafehan-bot.webitmaster.ru/s/kafehan/natur.png')
     t.delete(uid, mid)
@@ -103,7 +105,8 @@ def orders(uid, mid):
 def current_order(uid, mid):
     t.delete(uid, mid)
     order = Order.objects.filter(client__idu=uid, status__slag='start').first()
-    order_calc(order)
+    if order:
+        order_calc(order)
     if order:
         text = '📋 Заказ №' + str(order.pk) + '\n\n'
         prod_list = OrderList.objects.filter(order=order)
@@ -184,20 +187,25 @@ def product(uid, mid, data):
 
 @t.re_callback_handler(r'add_prod_([\d|]+)$')
 def add_prod_cb_handler(uid, mid, data):
+    del (msg_wait[uid])
     data = data[0].split('|')
     add_prod(uid, data[1], data[0], data[2])
 
 
 def order_calc(order):
-    delevery = OrderType.objects.filter(slag='delevery').first()
-    prod_list = OrderList.objects.filter(order=order)
-    summ = 0
-    for p in prod_list:
-        summ += p.product.cost * p.count
-    if delevery == order.type:
-        summ += int(re.search(r'\+(\d+)', delevery.name).group(1))
-    order.cost = summ
-    order.save()
+    if order:
+        try:
+            delevery = OrderType.objects.filter(slag='delevery').first()
+            prod_list = OrderList.objects.filter(order=order)
+            summ = 0
+            for p in prod_list:
+                summ += p.product.cost * p.count
+            if order.type and (delevery == order.type):
+                summ += int(re.search(r'\+(\d+)', delevery.name).group(1))
+            order.cost = summ
+            order.save()
+        except:
+            pass
 
 
 def add_prod(uid, prod_id, count, has):
@@ -208,14 +216,14 @@ def add_prod(uid, prod_id, count, has):
         status = OrderStatus.objects.filter(slag='start').first()
         order = Order(client=user, status=status)
         order.save()
-        kb = ([[b('✔ Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
+        kb = ([[b('✔️ Текущий заказ', 'order')]] if order else []) + [[kbs.menu], [kbs.orders]]
         global mid_kb
         t.delete(uid, mid_kb[uid])
 
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
-            kb=kb, safe=True)
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале [Кафе Хан - Новости](http://t.me/kafehan?start)',
+            kb=kb, safe=True, markdown=True)
 
     if not has:
         OrderList.objects.create(order=order, product=prod, count=int(count))
@@ -307,8 +315,8 @@ def prod_delete(uid, mid, data):
 
             mid_kb[uid] = t.send(
                 uid,
-                'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
-                kb=kb, safe=True)
+                'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале [Кафе Хан - Новости](http://t.me/kafehan?start)',
+                kb=kb, safe=True, markdown=True)
 
         t.send(uid, f'⭕ В заказе №{str(order)} больше не осталось блюд, поэтому он был удалён.')
         if order:
@@ -316,7 +324,8 @@ def prod_delete(uid, mid, data):
     else:
         p = order_list.filter(pk=data[0]).first()
         p.delete()
-        order_calc(order)
+        if order:
+            order_calc(order)
         t.send(uid, f'❌ {p.product.title} удалено из заказа №' + str(order))
 
 
@@ -342,8 +351,8 @@ def delete_order(uid, mid):
         t.delete(uid, midd)
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
-            kb=kb, safe=True)
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале [Кафе Хан - Новости](http://t.me/kafehan?start)',
+            kb=kb, safe=True, markdown=True)
 
     if order:
         order.delete()
@@ -447,8 +456,8 @@ def access_order(uid):
     if order.type.slag == 'table':
         if order.address:
             order.address = None
-
-    order_calc(order)
+    if order:
+        order_calc(order)
     text = '📋 Заказ №' + str(order.pk) + '\n\n'
     prod_list = OrderList.objects.filter(order=order)
     i = 0
@@ -498,8 +507,8 @@ def wait_access(uid):
         t.delete(uid, midd)
         mid_kb[uid] = t.send(
             uid,
-            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале @KafeHan',
-            kb=kb, safe=True)
+            'Кстати Вам нужно знать, что Вы наш самый лучший клиент🤴🏻!\n📣 Следите за скидаками и появлением новых блюд на нашем канале [Кафе Хан - Новости](http://t.me/kafehan?start)',
+            kb=kb, safe=True, markdown=True)
 
     t.send(
         uid,
@@ -536,7 +545,8 @@ def orders_list(uid, mid, data):
             date = o.dateCanceled
         else:
             date = o.dateDone
-        order_calc(o)
+        if o:
+            order_calc(o)
         ikb += [[b(f'№{str(o.pk)}) {str(date.strftime("%d%B%Yг. %H:%M"))} - {str(o.cost)}₽', 'order_' + str(o.pk))]]
     t.send(uid, text, ikb=ikb)
 
@@ -548,8 +558,8 @@ def order_one(uid, mid, data):
     status = order.status
     payed = 'оплачено' if order.payed else 'НЕоплачено'
     delevery_cost = int(re.search(r'\+(\d+)', OrderType.objects.filter(slag='delevery').first().name).group(1))
-
-    order_calc(order)
+    if order:
+        order_calc(order)
 
     text = '📋 Заказ №' + str(order.pk) + '\n\n'
     prod_list = OrderList.objects.filter(order=order)
