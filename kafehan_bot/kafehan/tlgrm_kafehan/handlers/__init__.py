@@ -579,11 +579,13 @@ def order_one(uid, mid, data):
         text += '\nАдрес доставки: ' + ('Геопозиция' if order.address[:3] == 'loc' else order.address)
     if order.type.slag == 'table':
         text += '\nСтол номер: ' + str(order.table.num)
-
+    tel = (order.number if order.number[:2] == '+7'
+           else ('+7' + order.number[1:] if order.number[0] == '8'
+                 else ('+7' + order.number if order.number[0] == '9' else order.number)))
     text += f"""
 Комментарий: {order.comment if order.comment else 'Без комментариев'}
 Оплата: {order.pay.name}
-Телефон: {order.number}
+Телефон: [{tel}](tel:{tel})
         """
 
     ikb = [[]]
